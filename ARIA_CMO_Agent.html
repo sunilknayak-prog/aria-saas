@@ -1,0 +1,883 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>ARIA — AI Marketing Command Center</title>
+<style>
+@import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600&family=JetBrains+Mono:wght@400;500&display=swap');
+
+:root {
+  --bg: #07080f;
+  --bg2: #0d0f1a;
+  --bg3: #12152200;
+  --surface: #111420;
+  --surface2: #181c2e;
+  --border: #1e2340;
+  --border2: #252a45;
+  --accent: #4f6ef7;
+  --accent2: #7c5ef4;
+  --accent-glow: rgba(79,110,247,0.15);
+  --green: #10d9a0;
+  --green-bg: rgba(16,217,160,0.08);
+  --amber: #f5a623;
+  --amber-bg: rgba(245,166,35,0.08);
+  --red: #f04f4f;
+  --red-bg: rgba(240,79,79,0.08);
+  --text: #e8eaf6;
+  --text2: #8891b4;
+  --text3: #454d6d;
+  --mono: 'JetBrains Mono', monospace;
+  --sans: 'Inter', sans-serif;
+}
+
+* { box-sizing: border-box; margin: 0; padding: 0; }
+html, body { height: 100%; background: var(--bg); color: var(--text); font-family: var(--sans); font-size: 14px; overflow: hidden; }
+
+.shell { display: flex; height: 100vh; }
+
+/* SIDEBAR */
+.sidebar {
+  width: 220px; flex-shrink: 0;
+  background: var(--bg2);
+  border-right: 1px solid var(--border);
+  display: flex; flex-direction: column;
+  padding: 0;
+}
+.logo {
+  padding: 20px 20px 16px;
+  border-bottom: 1px solid var(--border);
+}
+.logo-mark {
+  display: flex; align-items: center; gap: 10px;
+}
+.logo-icon {
+  width: 32px; height: 32px; border-radius: 8px;
+  background: linear-gradient(135deg, var(--accent), var(--accent2));
+  display: flex; align-items: center; justify-content: center;
+  font-size: 14px; font-weight: 700; color: white; font-family: var(--mono);
+}
+.logo-name { font-size: 16px; font-weight: 600; letter-spacing: .02em; }
+.logo-tag { font-size: 10px; color: var(--text3); margin-top: 2px; letter-spacing: .06em; text-transform: uppercase; }
+
+.nav { padding: 12px 10px; flex: 1; overflow-y: auto; }
+.nav-section { font-size: 10px; color: var(--text3); letter-spacing: .08em; text-transform: uppercase; padding: 8px 10px 4px; }
+.nav-item {
+  display: flex; align-items: center; gap: 10px;
+  padding: 8px 10px; border-radius: 8px; cursor: pointer;
+  font-size: 13px; color: var(--text2); margin-bottom: 2px;
+  transition: all .15s;
+}
+.nav-item:hover { background: var(--surface); color: var(--text); }
+.nav-item.active { background: var(--accent-glow); color: var(--accent); border: 1px solid rgba(79,110,247,.2); }
+.nav-item .ni { width: 16px; text-align: center; font-size: 15px; }
+.nav-badge { margin-left: auto; background: var(--accent); color: white; font-size: 10px; padding: 1px 6px; border-radius: 10px; font-family: var(--mono); }
+
+.sidebar-footer {
+  padding: 14px 16px;
+  border-top: 1px solid var(--border);
+}
+.agent-status {
+  display: flex; align-items: center; gap: 8px;
+  font-size: 12px; color: var(--text2);
+}
+.pulse { width: 8px; height: 8px; border-radius: 50%; background: var(--green); position: relative; flex-shrink: 0; }
+.pulse::after { content: ''; position: absolute; inset: -3px; border-radius: 50%; border: 2px solid var(--green); opacity: .4; animation: ping 2s infinite; }
+@keyframes ping { 0%,100%{transform:scale(1);opacity:.4} 50%{transform:scale(1.4);opacity:0} }
+
+/* MAIN */
+.main { flex: 1; display: flex; flex-direction: column; overflow: hidden; }
+
+.topbar {
+  height: 56px; flex-shrink: 0;
+  border-bottom: 1px solid var(--border);
+  display: flex; align-items: center; padding: 0 24px;
+  gap: 16px; background: var(--bg2);
+}
+.topbar-title { font-size: 15px; font-weight: 500; }
+.topbar-sub { font-size: 12px; color: var(--text3); }
+.topbar-spacer { flex: 1; }
+.chip {
+  display: flex; align-items: center; gap: 6px;
+  background: var(--surface); border: 1px solid var(--border2);
+  border-radius: 20px; padding: 4px 12px; font-size: 12px; color: var(--text2);
+}
+.chip-dot { width: 6px; height: 6px; border-radius: 50%; background: var(--green); }
+
+.content { flex: 1; overflow-y: auto; padding: 24px; }
+
+/* PANELS */
+.panel { display: none; }
+.panel.active { display: block; }
+
+/* METRICS ROW */
+.metrics { display: grid; grid-template-columns: repeat(4, 1fr); gap: 12px; margin-bottom: 20px; }
+.metric-card {
+  background: var(--surface); border: 1px solid var(--border);
+  border-radius: 12px; padding: 16px;
+}
+.metric-label { font-size: 11px; color: var(--text3); text-transform: uppercase; letter-spacing: .06em; margin-bottom: 8px; }
+.metric-value { font-size: 24px; font-weight: 600; font-family: var(--mono); }
+.metric-delta { font-size: 11px; margin-top: 4px; display: flex; align-items: center; gap: 4px; }
+.delta-up { color: var(--green); }
+.delta-down { color: var(--red); }
+
+/* GRID 2-COL */
+.grid2 { display: grid; grid-template-columns: 1fr 1fr; gap: 16px; margin-bottom: 16px; }
+.grid3 { display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 16px; margin-bottom: 16px; }
+
+/* CARD */
+.card {
+  background: var(--surface); border: 1px solid var(--border);
+  border-radius: 12px; overflow: hidden;
+}
+.card-header {
+  padding: 14px 18px; border-bottom: 1px solid var(--border);
+  display: flex; align-items: center; gap: 10px;
+}
+.card-title { font-size: 13px; font-weight: 500; }
+.card-sub { font-size: 11px; color: var(--text3); margin-left: auto; }
+.card-body { padding: 18px; }
+
+/* INPUT AREA */
+.input-wrap {
+  background: var(--bg2); border: 1px solid var(--border2);
+  border-radius: 12px; display: flex; flex-direction: column;
+  overflow: hidden; margin-bottom: 16px;
+}
+.input-wrap textarea {
+  background: transparent; border: none; outline: none;
+  color: var(--text); font-family: var(--sans); font-size: 14px;
+  padding: 16px; resize: none; min-height: 100px; line-height: 1.6;
+}
+.input-wrap textarea::placeholder { color: var(--text3); }
+.input-footer {
+  padding: 10px 14px; border-top: 1px solid var(--border);
+  display: flex; align-items: center; gap: 10px;
+}
+.input-hint { font-size: 11px; color: var(--text3); flex: 1; }
+.btn {
+  display: inline-flex; align-items: center; gap: 6px;
+  padding: 8px 16px; border-radius: 8px; font-size: 13px;
+  font-family: var(--sans); cursor: pointer; border: none;
+  font-weight: 500; transition: all .15s;
+}
+.btn-primary { background: var(--accent); color: white; }
+.btn-primary:hover { background: #3d5be5; }
+.btn-primary:disabled { opacity: .5; cursor: not-allowed; }
+.btn-ghost { background: transparent; color: var(--text2); border: 1px solid var(--border2); }
+.btn-ghost:hover { background: var(--surface2); color: var(--text); }
+.btn-sm { padding: 5px 12px; font-size: 12px; }
+
+/* AI RESPONSE */
+.ai-response {
+  background: var(--bg2); border: 1px solid var(--border);
+  border-radius: 12px; padding: 20px; margin-bottom: 16px;
+  display: none; line-height: 1.7; font-size: 13px; color: var(--text);
+}
+.ai-response.visible { display: block; }
+.ai-response h3 { font-size: 13px; font-weight: 600; color: var(--accent); margin: 16px 0 8px; }
+.ai-response h3:first-child { margin-top: 0; }
+.ai-response ul { padding-left: 18px; }
+.ai-response li { margin-bottom: 4px; color: var(--text2); }
+.ai-response strong { color: var(--text); font-weight: 500; }
+.ai-response .highlight { background: var(--accent-glow); border-left: 2px solid var(--accent); padding: 10px 14px; border-radius: 0 8px 8px 0; margin: 12px 0; font-size: 13px; }
+.ai-response table { width: 100%; border-collapse: collapse; margin: 12px 0; font-size: 12px; }
+.ai-response th { text-align: left; padding: 8px 12px; background: var(--surface); color: var(--text2); font-weight: 500; border-bottom: 1px solid var(--border); }
+.ai-response td { padding: 8px 12px; border-bottom: 1px solid var(--border); color: var(--text2); }
+.ai-response td:first-child { color: var(--text); }
+
+/* THINKING */
+.thinking {
+  display: none; align-items: center; gap: 10px;
+  padding: 16px 20px; background: var(--bg2);
+  border: 1px solid var(--border); border-radius: 12px;
+  margin-bottom: 16px; font-size: 13px; color: var(--text3);
+}
+.thinking.visible { display: flex; }
+.think-dots span { display: inline-block; width: 5px; height: 5px; border-radius: 50%; background: var(--accent); margin: 0 2px; animation: bounce .8s infinite; }
+.think-dots span:nth-child(2) { animation-delay: .15s; }
+.think-dots span:nth-child(3) { animation-delay: .3s; }
+@keyframes bounce { 0%,80%,100%{transform:scale(.8);opacity:.4} 40%{transform:scale(1.2);opacity:1} }
+
+/* CHANNEL BARS */
+.channel-row { display: flex; align-items: center; gap: 12px; margin-bottom: 10px; }
+.channel-name { width: 90px; font-size: 12px; color: var(--text2); flex-shrink: 0; }
+.channel-bar-wrap { flex: 1; height: 6px; background: var(--border); border-radius: 3px; overflow: hidden; }
+.channel-bar { height: 100%; border-radius: 3px; transition: width 1s cubic-bezier(.4,0,.2,1); }
+.channel-val { width: 36px; text-align: right; font-size: 12px; font-family: var(--mono); color: var(--text2); }
+.channel-roas { width: 48px; text-align: right; font-size: 11px; color: var(--green); }
+
+/* FUNNEL */
+.funnel-step {
+  display: flex; align-items: center; gap: 14px;
+  padding: 12px 16px; border-radius: 8px;
+  background: var(--surface2); border: 1px solid var(--border);
+  margin-bottom: 6px;
+}
+.funnel-label { font-size: 13px; color: var(--text2); flex: 1; }
+.funnel-val { font-size: 14px; font-weight: 600; font-family: var(--mono); }
+.funnel-cvr { font-size: 11px; color: var(--text3); width: 44px; text-align: right; }
+
+/* TABS */
+.tabs { display: flex; gap: 4px; margin-bottom: 16px; }
+.tab {
+  padding: 7px 14px; border-radius: 8px; font-size: 12px;
+  cursor: pointer; color: var(--text3); border: 1px solid transparent;
+  transition: all .15s;
+}
+.tab:hover { color: var(--text2); }
+.tab.active { background: var(--surface); border-color: var(--border2); color: var(--text); }
+
+/* ROI SCORE */
+.roi-ring {
+  width: 90px; height: 90px; position: relative; margin: 0 auto 12px;
+}
+.roi-ring svg { transform: rotate(-90deg); }
+.roi-label { position: absolute; inset: 0; display: flex; flex-direction: column; align-items: center; justify-content: center; }
+.roi-num { font-size: 20px; font-weight: 700; font-family: var(--mono); color: var(--green); }
+.roi-sub { font-size: 9px; color: var(--text3); text-transform: uppercase; }
+
+/* SCROLLBAR */
+::-webkit-scrollbar { width: 4px; }
+::-webkit-scrollbar-track { background: transparent; }
+::-webkit-scrollbar-thumb { background: var(--border2); border-radius: 2px; }
+
+/* REPORT OUTPUT */
+.report-block {
+  background: var(--surface); border: 1px solid var(--border);
+  border-radius: 10px; padding: 14px 16px; margin-bottom: 10px;
+}
+.report-block-title { font-size: 11px; color: var(--accent); text-transform: uppercase; letter-spacing: .06em; margin-bottom: 8px; font-weight: 500; }
+.report-block p { font-size: 13px; color: var(--text2); line-height: 1.6; }
+
+/* BADGE */
+.badge { display: inline-block; font-size: 10px; padding: 2px 8px; border-radius: 10px; font-weight: 500; }
+.badge-green { background: var(--green-bg); color: var(--green); }
+.badge-amber { background: var(--amber-bg); color: var(--amber); }
+.badge-red { background: var(--red-bg); color: var(--red); }
+.badge-blue { background: var(--accent-glow); color: var(--accent); }
+
+/* CHAT */
+.chat-wrap { display: flex; flex-direction: column; height: calc(100vh - 160px); }
+.chat-messages { flex: 1; overflow-y: auto; padding-bottom: 16px; }
+.msg { display: flex; gap: 12px; margin-bottom: 20px; }
+.msg-avatar {
+  width: 32px; height: 32px; border-radius: 8px; flex-shrink: 0;
+  display: flex; align-items: center; justify-content: center;
+  font-size: 13px; font-weight: 700;
+}
+.msg-avatar.aria { background: linear-gradient(135deg, var(--accent), var(--accent2)); color: white; font-family: var(--mono); }
+.msg-avatar.user { background: var(--surface2); color: var(--text2); font-size: 16px; }
+.msg-body { flex: 1; }
+.msg-name { font-size: 11px; color: var(--text3); margin-bottom: 6px; }
+.msg-text { font-size: 13px; color: var(--text2); line-height: 1.7; background: var(--surface); border: 1px solid var(--border); border-radius: 10px; padding: 12px 14px; }
+.msg-text strong { color: var(--text); }
+.msg-text ul { padding-left: 16px; margin-top: 6px; }
+.msg-text li { margin-bottom: 3px; }
+.chat-input-wrap {
+  display: flex; gap: 10px; padding-top: 14px;
+  border-top: 1px solid var(--border);
+}
+.chat-input {
+  flex: 1; background: var(--surface); border: 1px solid var(--border2);
+  border-radius: 10px; padding: 10px 14px; color: var(--text);
+  font-family: var(--sans); font-size: 13px; outline: none;
+  resize: none; line-height: 1.5;
+}
+.chat-input::placeholder { color: var(--text3); }
+</style>
+</head>
+<body>
+<div class="shell">
+
+<!-- SIDEBAR -->
+<div class="sidebar">
+  <div class="logo">
+    <div class="logo-mark">
+      <div class="logo-icon">A</div>
+      <div>
+        <div class="logo-name">ARIA</div>
+        <div class="logo-tag">CMO Intelligence Agent</div>
+      </div>
+    </div>
+  </div>
+  <div class="nav">
+    <div class="nav-section">Command</div>
+    <div class="nav-item active" onclick="nav('dashboard')">
+      <span class="ni">⬡</span> Dashboard
+    </div>
+    <div class="nav-item" onclick="nav('chat')">
+      <span class="ni">◈</span> Ask ARIA
+      <span class="nav-badge">AI</span>
+    </div>
+    <div class="nav-section">Campaign</div>
+    <div class="nav-item" onclick="nav('planner')">
+      <span class="ni">◎</span> Campaign Planner
+    </div>
+    <div class="nav-item" onclick="nav('budget')">
+      <span class="ni">◇</span> Budget Optimizer
+    </div>
+    <div class="nav-item" onclick="nav('creative')">
+      <span class="ni">◈</span> Creative Analyzer
+    </div>
+    <div class="nav-section">Intelligence</div>
+    <div class="nav-item" onclick="nav('tracker')">
+      <span class="ni">◉</span> Performance Tracker
+    </div>
+    <div class="nav-item" onclick="nav('report')">
+      <span class="ni">◫</span> Report Generator
+    </div>
+  </div>
+  <div class="sidebar-footer">
+    <div class="agent-status">
+      <div class="pulse"></div>
+      <span>ARIA online · GPT-4 engine</span>
+    </div>
+  </div>
+</div>
+
+<!-- MAIN -->
+<div class="main">
+  <div class="topbar">
+    <div>
+      <div class="topbar-title" id="topbar-title">Marketing Command Center</div>
+      <div class="topbar-sub" id="topbar-sub">Overview across all active campaigns</div>
+    </div>
+    <div class="topbar-spacer"></div>
+    <div class="chip"><div class="chip-dot"></div> All systems operational</div>
+    <div class="chip">Q2 2025</div>
+  </div>
+
+  <div class="content">
+
+    <!-- DASHBOARD -->
+    <div class="panel active" id="panel-dashboard">
+      <div class="metrics">
+        <div class="metric-card">
+          <div class="metric-label">Total Ad Spend</div>
+          <div class="metric-value" style="color:var(--accent)">$84,200</div>
+          <div class="metric-delta delta-up">↑ 12% vs last month</div>
+        </div>
+        <div class="metric-card">
+          <div class="metric-label">Revenue Generated</div>
+          <div class="metric-value" style="color:var(--green)">$712,440</div>
+          <div class="metric-delta delta-up">↑ 31% vs last month</div>
+        </div>
+        <div class="metric-card">
+          <div class="metric-label">Blended ROAS</div>
+          <div class="metric-value" style="color:var(--text)">8.46×</div>
+          <div class="metric-delta delta-up">↑ 1.2× vs last month</div>
+        </div>
+        <div class="metric-card">
+          <div class="metric-label">AI Optimisations</div>
+          <div class="metric-value" style="color:var(--amber)">247</div>
+          <div class="metric-delta" style="color:var(--text3)">Last 30 days</div>
+        </div>
+      </div>
+
+      <div class="grid2">
+        <div class="card">
+          <div class="card-header">
+            <span class="card-title">Channel Performance</span>
+            <span class="card-sub">ROAS by channel</span>
+          </div>
+          <div class="card-body">
+            <div class="channel-row">
+              <div class="channel-name">Google Search</div>
+              <div class="channel-bar-wrap"><div class="channel-bar" style="width:88%;background:var(--accent)"></div></div>
+              <div class="channel-val">$31K</div>
+              <div class="channel-roas">11.2×</div>
+            </div>
+            <div class="channel-row">
+              <div class="channel-name">Meta Ads</div>
+              <div class="channel-bar-wrap"><div class="channel-bar" style="width:72%;background:var(--accent2)"></div></div>
+              <div class="channel-val">$24K</div>
+              <div class="channel-roas">8.4×</div>
+            </div>
+            <div class="channel-row">
+              <div class="channel-name">YouTube</div>
+              <div class="channel-bar-wrap"><div class="channel-bar" style="width:55%;background:var(--green)"></div></div>
+              <div class="channel-val">$14K</div>
+              <div class="channel-roas">6.1×</div>
+            </div>
+            <div class="channel-row">
+              <div class="channel-name">LinkedIn</div>
+              <div class="channel-bar-wrap"><div class="channel-bar" style="width:40%;background:var(--amber)"></div></div>
+              <div class="channel-val">$10K</div>
+              <div class="channel-roas">4.8×</div>
+            </div>
+            <div class="channel-row">
+              <div class="channel-name">TikTok</div>
+              <div class="channel-bar-wrap"><div class="channel-bar" style="width:28%;background:var(--red)"></div></div>
+              <div class="channel-val">$5K</div>
+              <div class="channel-roas">3.1×</div>
+            </div>
+          </div>
+        </div>
+
+        <div class="card">
+          <div class="card-header">
+            <span class="card-title">Conversion Funnel</span>
+            <span class="card-sub">This month</span>
+          </div>
+          <div class="card-body">
+            <div class="funnel-step">
+              <div style="font-size:18px">👁</div>
+              <div class="funnel-label">Impressions</div>
+              <div class="funnel-val">4.2M</div>
+              <div class="funnel-cvr"></div>
+            </div>
+            <div class="funnel-step">
+              <div style="font-size:18px">🖱</div>
+              <div class="funnel-label">Clicks</div>
+              <div class="funnel-val">84,400</div>
+              <div class="funnel-cvr" style="color:var(--text3)">2.0%</div>
+            </div>
+            <div class="funnel-step">
+              <div style="font-size:18px">📄</div>
+              <div class="funnel-label">Leads</div>
+              <div class="funnel-val">6,220</div>
+              <div class="funnel-cvr" style="color:var(--amber)">7.4%</div>
+            </div>
+            <div class="funnel-step">
+              <div style="font-size:18px">💰</div>
+              <div class="funnel-label">Customers</div>
+              <div class="funnel-val">934</div>
+              <div class="funnel-cvr" style="color:var(--green)">15.0%</div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <div class="card">
+        <div class="card-header">
+          <span class="card-title">ARIA Recommendations</span>
+          <span class="badge badge-blue">AI Generated</span>
+        </div>
+        <div class="card-body" style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:12px">
+          <div style="background:var(--surface2);border:1px solid var(--border);border-radius:10px;padding:14px">
+            <div style="color:var(--green);font-size:11px;font-weight:500;margin-bottom:6px">↑ SCALE</div>
+            <div style="font-size:13px;margin-bottom:6px">Increase Google Search budget by 20%</div>
+            <div style="font-size:11px;color:var(--text3)">ROAS of 11.2× — highest performing channel. Est. +$18K revenue at +$1.6K spend.</div>
+          </div>
+          <div style="background:var(--surface2);border:1px solid var(--border);border-radius:10px;padding:14px">
+            <div style="color:var(--amber);font-size:11px;font-weight:500;margin-bottom:6px">⚠ OPTIMISE</div>
+            <div style="font-size:13px;margin-bottom:6px">Pause TikTok campaigns on weekdays</div>
+            <div style="font-size:11px;color:var(--text3)">Weekend ROAS is 5.8× vs weekday 1.4×. Reallocate $3K to weekend-only scheduling.</div>
+          </div>
+          <div style="background:var(--surface2);border:1px solid var(--border);border-radius:10px;padding:14px">
+            <div style="color:var(--red);font-size:11px;font-weight:500;margin-bottom:6px">↓ REDUCE</div>
+            <div style="font-size:13px;margin-bottom:6px">Cut LinkedIn spend by 30%</div>
+            <div style="font-size:11px;color:var(--text3)">4.8× ROAS below 5× target. Move budget to Meta which converts same audience at 8.4×.</div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- ASK ARIA (CHAT) -->
+    <div class="panel" id="panel-chat">
+      <div class="chat-wrap">
+        <div class="chat-messages" id="chat-messages">
+          <div class="msg">
+            <div class="msg-avatar aria">A</div>
+            <div class="msg-body">
+              <div class="msg-name">ARIA · CMO Intelligence Agent</div>
+              <div class="msg-text">
+                Hello. I'm ARIA — your AI marketing command centre.<br><br>
+                I can help you with campaign strategy, budget allocation, creative analysis, performance diagnostics, competitor research, and executive reporting.<br><br>
+                <strong>Try asking:</strong>
+                <ul>
+                  <li>"What's the best channel mix for a $50K monthly budget in B2B SaaS?"</li>
+                  <li>"Why is my Meta ROAS dropping and how do I fix it?"</li>
+                  <li>"Build me a 90-day go-to-market plan for a new product launch"</li>
+                  <li>"Write a CMO board report for this month's performance"</li>
+                </ul>
+              </div>
+            </div>
+          </div>
+        </div>
+        <div class="chat-input-wrap">
+          <textarea class="chat-input" id="chat-input" rows="2" placeholder="Ask ARIA anything about your marketing strategy..."></textarea>
+          <button class="btn btn-primary" onclick="sendChat()" id="chat-send-btn">Send</button>
+        </div>
+      </div>
+    </div>
+
+    <!-- CAMPAIGN PLANNER -->
+    <div class="panel" id="panel-planner">
+      <div class="input-wrap">
+        <textarea id="planner-input" placeholder="Describe your campaign. Include: product/service, target audience, budget, timeline, goal (leads, sales, awareness), geography, and any constraints.
+
+Example: Launch campaign for a B2B SaaS project management tool targeting ops managers at 50-500 person companies. $30K budget, 60 days, goal is 200 demo bookings. US market. Competitor is Asana and Monday.com." style="min-height:130px"></textarea>
+        <div class="input-footer">
+          <span class="input-hint">ARIA will generate a complete campaign strategy, channel plan, creative brief, and KPI framework</span>
+          <button class="btn btn-primary" onclick="runPlanner()" id="planner-btn">Generate Campaign Plan</button>
+        </div>
+      </div>
+      <div class="thinking" id="planner-thinking">
+        <div class="think-dots"><span></span><span></span><span></span></div>
+        <span id="planner-think-text">Analysing campaign brief...</span>
+      </div>
+      <div class="ai-response" id="planner-output"></div>
+    </div>
+
+    <!-- BUDGET OPTIMIZER -->
+    <div class="panel" id="panel-budget">
+      <div class="grid2" style="margin-bottom:16px">
+        <div class="card">
+          <div class="card-header"><span class="card-title">Campaign Parameters</span></div>
+          <div class="card-body" style="display:flex;flex-direction:column;gap:12px">
+            <div>
+              <label style="font-size:11px;color:var(--text3);display:block;margin-bottom:4px">MONTHLY BUDGET</label>
+              <input type="text" id="budget-amount" value="$50,000" style="background:var(--surface2);border:1px solid var(--border2);border-radius:8px;padding:8px 12px;color:var(--text);font-family:var(--mono);font-size:14px;width:100%;outline:none">
+            </div>
+            <div>
+              <label style="font-size:11px;color:var(--text3);display:block;margin-bottom:4px">INDUSTRY</label>
+              <select id="budget-industry" style="background:var(--surface2);border:1px solid var(--border2);border-radius:8px;padding:8px 12px;color:var(--text);font-size:13px;width:100%;outline:none">
+                <option>B2B SaaS</option>
+                <option>eCommerce</option>
+                <option>B2C Consumer</option>
+                <option>Professional Services</option>
+                <option>HealthTech</option>
+                <option>FinTech</option>
+              </select>
+            </div>
+            <div>
+              <label style="font-size:11px;color:var(--text3);display:block;margin-bottom:4px">PRIMARY GOAL</label>
+              <select id="budget-goal" style="background:var(--surface2);border:1px solid var(--border2);border-radius:8px;padding:8px 12px;color:var(--text);font-size:13px;width:100%;outline:none">
+                <option>Lead Generation</option>
+                <option>Direct Sales / ROAS</option>
+                <option>Brand Awareness</option>
+                <option>App Installs</option>
+                <option>Event Registrations</option>
+              </select>
+            </div>
+            <div>
+              <label style="font-size:11px;color:var(--text3);display:block;margin-bottom:4px">TARGET ROAS</label>
+              <input type="text" id="budget-roas" value="8x" style="background:var(--surface2);border:1px solid var(--border2);border-radius:8px;padding:8px 12px;color:var(--text);font-family:var(--mono);font-size:14px;width:100%;outline:none">
+            </div>
+            <button class="btn btn-primary" onclick="runBudget()" id="budget-btn">Optimise Budget Allocation</button>
+          </div>
+        </div>
+        <div class="card">
+          <div class="card-header"><span class="card-title">Current Allocation (editable)</span></div>
+          <div class="card-body">
+            <div style="font-size:11px;color:var(--text3);margin-bottom:12px">Drag sliders or type percentages. ARIA will optimise from here.</div>
+            <div id="budget-sliders"></div>
+          </div>
+        </div>
+      </div>
+      <div class="thinking" id="budget-thinking">
+        <div class="think-dots"><span></span><span></span><span></span></div>
+        <span>Calculating optimal allocation...</span>
+      </div>
+      <div class="ai-response" id="budget-output"></div>
+    </div>
+
+    <!-- CREATIVE ANALYZER -->
+    <div class="panel" id="panel-creative">
+      <div class="input-wrap">
+        <textarea id="creative-input" placeholder="Describe your ad creative or paste the copy. Include: headline, body copy, CTA, visual description, platform, target audience, and what you're trying to achieve.
+
+Example: Facebook ad for a weight loss app. Headline: 'Drop 10lbs in 30 Days — No Gym Required'. Body: 'Thousands of busy parents have already transformed their bodies with just 15 minutes a day...' CTA: Start Free Trial. Target: women 30-50, interested in wellness." style="min-height:130px"></textarea>
+        <div class="input-footer">
+          <span class="input-hint">ARIA scores your creative, identifies weaknesses, and rewrites it for higher conversion</span>
+          <button class="btn btn-primary" onclick="runCreative()" id="creative-btn">Analyse Creative</button>
+        </div>
+      </div>
+      <div class="thinking" id="creative-thinking">
+        <div class="think-dots"><span></span><span></span><span></span></div>
+        <span id="creative-think-text">Scoring creative elements...</span>
+      </div>
+      <div class="ai-response" id="creative-output"></div>
+    </div>
+
+    <!-- TRACKER -->
+    <div class="panel" id="panel-tracker">
+      <div class="metrics" style="grid-template-columns:repeat(5,1fr)">
+        <div class="metric-card">
+          <div class="metric-label">Impressions</div>
+          <div class="metric-value" style="font-size:20px">4.2M</div>
+          <div class="metric-delta delta-up">↑ 8%</div>
+        </div>
+        <div class="metric-card">
+          <div class="metric-label">CTR</div>
+          <div class="metric-value" style="font-size:20px;color:var(--amber)">2.01%</div>
+          <div class="metric-delta delta-down">↓ 0.3%</div>
+        </div>
+        <div class="metric-card">
+          <div class="metric-label">CPC</div>
+          <div class="metric-value" style="font-size:20px">$1.24</div>
+          <div class="metric-delta delta-up">↓ $0.18</div>
+        </div>
+        <div class="metric-card">
+          <div class="metric-label">Conv. Rate</div>
+          <div class="metric-value" style="font-size:20px;color:var(--green)">11.1%</div>
+          <div class="metric-delta delta-up">↑ 2.1%</div>
+        </div>
+        <div class="metric-card">
+          <div class="metric-label">ROAS</div>
+          <div class="metric-value" style="font-size:20px;color:var(--green)">8.46×</div>
+          <div class="metric-delta delta-up">↑ 1.2×</div>
+        </div>
+      </div>
+      <div class="grid2">
+        <div class="card">
+          <div class="card-header"><span class="card-title">A/B Test Results</span><span class="badge badge-green" style="margin-left:auto">3 Active Tests</span></div>
+          <div class="card-body" style="display:flex;flex-direction:column;gap:10px">
+            <div style="background:var(--surface2);border:1px solid var(--border);border-radius:10px;padding:12px">
+              <div style="display:flex;justify-content:space-between;margin-bottom:8px">
+                <span style="font-size:12px;font-weight:500">Headline Test — Google Search</span>
+                <span class="badge badge-green">Winner found</span>
+              </div>
+              <div style="font-size:12px;color:var(--text3);margin-bottom:4px">Variant A: "Start Free Trial" → 9.2% CVR</div>
+              <div style="font-size:12px;color:var(--green)">Variant B: "Get Results in 30 Days" → 14.7% CVR ✓</div>
+            </div>
+            <div style="background:var(--surface2);border:1px solid var(--border);border-radius:10px;padding:12px">
+              <div style="display:flex;justify-content:space-between;margin-bottom:8px">
+                <span style="font-size:12px;font-weight:500">Audience Test — Meta</span>
+                <span class="badge badge-amber">Running (day 8/14)</span>
+              </div>
+              <div style="font-size:12px;color:var(--text3);margin-bottom:4px">Lookalike 1%: $42 CPL</div>
+              <div style="font-size:12px;color:var(--text3)">Interest stack: $38 CPL (leading)</div>
+            </div>
+            <div style="background:var(--surface2);border:1px solid var(--border);border-radius:10px;padding:12px">
+              <div style="display:flex;justify-content:space-between;margin-bottom:8px">
+                <span style="font-size:12px;font-weight:500">Landing Page Test</span>
+                <span class="badge badge-amber">Running (day 3/21)</span>
+              </div>
+              <div style="font-size:12px;color:var(--text3);margin-bottom:4px">Control (long form): 8.1% CVR</div>
+              <div style="font-size:12px;color:var(--text3)">Variant (VSL): 11.3% CVR (early)</div>
+            </div>
+          </div>
+        </div>
+        <div class="card">
+          <div class="card-header"><span class="card-title">ROI by Campaign</span></div>
+          <div class="card-body">
+            <table style="width:100%;font-size:12px;border-collapse:collapse">
+              <tr style="border-bottom:1px solid var(--border)">
+                <th style="text-align:left;padding:6px 0;color:var(--text3);font-weight:500">Campaign</th>
+                <th style="text-align:right;padding:6px 0;color:var(--text3);font-weight:500">Spend</th>
+                <th style="text-align:right;padding:6px 0;color:var(--text3);font-weight:500">Revenue</th>
+                <th style="text-align:right;padding:6px 0;color:var(--text3);font-weight:500">ROAS</th>
+              </tr>
+              <tr style="border-bottom:1px solid var(--border)"><td style="padding:8px 0">Brand Search</td><td style="text-align:right;font-family:var(--mono)">$8.2K</td><td style="text-align:right;font-family:var(--mono)">$98.4K</td><td style="text-align:right;color:var(--green)">12.0×</td></tr>
+              <tr style="border-bottom:1px solid var(--border)"><td style="padding:8px 0">Competitor KW</td><td style="text-align:right;font-family:var(--mono)">$6.1K</td><td style="text-align:right;font-family:var(--mono)">$61.0K</td><td style="text-align:right;color:var(--green)">10.0×</td></tr>
+              <tr style="border-bottom:1px solid var(--border)"><td style="padding:8px 0">Meta Retarget</td><td style="text-align:right;font-family:var(--mono)">$4.8K</td><td style="text-align:right;font-family:var(--mono)">$43.2K</td><td style="text-align:right;color:var(--green)">9.0×</td></tr>
+              <tr style="border-bottom:1px solid var(--border)"><td style="padding:8px 0">Meta Prospect</td><td style="text-align:right;font-family:var(--mono)">$12.4K</td><td style="text-align:right;font-family:var(--mono)">$86.8K</td><td style="text-align:right;color:var(--amber)">7.0×</td></tr>
+              <tr><td style="padding:8px 0">YouTube</td><td style="text-align:right;font-family:var(--mono)">$9.2K</td><td style="text-align:right;font-family:var(--mono)">$46.0K</td><td style="text-align:right;color:var(--amber)">5.0×</td></tr>
+            </table>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- REPORT GENERATOR -->
+    <div class="panel" id="panel-report">
+      <div class="grid3" style="margin-bottom:16px">
+        <div>
+          <label style="font-size:11px;color:var(--text3);display:block;margin-bottom:6px">REPORT TYPE</label>
+          <select id="report-type" style="background:var(--surface);border:1px solid var(--border2);border-radius:8px;padding:9px 12px;color:var(--text);font-size:13px;width:100%;outline:none">
+            <option>CMO Board Report</option>
+            <option>Weekly Performance Summary</option>
+            <option>Campaign Post-Mortem</option>
+            <option>Investor Marketing Update</option>
+            <option>Agency Client Report</option>
+          </select>
+        </div>
+        <div>
+          <label style="font-size:11px;color:var(--text3);display:block;margin-bottom:6px">PERIOD</label>
+          <select id="report-period" style="background:var(--surface);border:1px solid var(--border2);border-radius:8px;padding:9px 12px;color:var(--text);font-size:13px;width:100%;outline:none">
+            <option>This Month (June 2025)</option>
+            <option>Last 30 Days</option>
+            <option>Q2 2025</option>
+            <option>Last 90 Days</option>
+            <option>Year to Date</option>
+          </select>
+        </div>
+        <div style="display:flex;align-items:flex-end">
+          <button class="btn btn-primary" style="width:100%;justify-content:center" onclick="runReport()" id="report-btn">Generate Report</button>
+        </div>
+      </div>
+      <div class="thinking" id="report-thinking">
+        <div class="think-dots"><span></span><span></span><span></span></div>
+        <span>Compiling performance data...</span>
+      </div>
+      <div class="ai-response" id="report-output"></div>
+    </div>
+
+  </div>
+</div>
+</div>
+
+<script>
+const NAV_MAP = {
+  dashboard: { title: 'Marketing Command Center', sub: 'Overview across all active campaigns' },
+  chat: { title: 'Ask ARIA', sub: 'Your AI marketing strategist' },
+  planner: { title: 'Campaign Planner', sub: 'Generate a complete campaign strategy from a brief' },
+  budget: { title: 'Budget Optimizer', sub: 'AI-powered channel allocation for maximum ROAS' },
+  creative: { title: 'Creative Analyzer', sub: 'Score, diagnose, and rewrite your ad creative' },
+  tracker: { title: 'Performance Tracker', sub: 'Live metrics, A/B tests, and ROI by campaign' },
+  report: { title: 'Report Generator', sub: 'One-click executive and client reports' },
+};
+
+function nav(id) {
+  document.querySelectorAll('.panel').forEach(p => p.classList.remove('active'));
+  document.querySelectorAll('.nav-item').forEach(n => n.classList.remove('active'));
+  document.getElementById('panel-' + id).classList.add('active');
+  event.currentTarget.classList.add('active');
+  document.getElementById('topbar-title').textContent = NAV_MAP[id].title;
+  document.getElementById('topbar-sub').textContent = NAV_MAP[id].sub;
+}
+
+const CHANNELS = ['Google Search','Meta Ads','YouTube','LinkedIn','TikTok','Email','SEO/Content'];
+const DEFAULTS = [35,25,15,10,5,5,5];
+function buildSliders() {
+  const c = document.getElementById('budget-sliders');
+  c.innerHTML = CHANNELS.map((ch,i) => `
+    <div class="channel-row" style="margin-bottom:12px">
+      <div class="channel-name" style="width:110px;font-size:12px">${ch}</div>
+      <input type="range" min="0" max="60" value="${DEFAULTS[i]}" style="flex:1" oninput="document.getElementById('bv${i}').textContent=this.value+'%'">
+      <div id="bv${i}" style="width:36px;text-align:right;font-size:12px;font-family:var(--mono);color:var(--text2)">${DEFAULTS[i]}%</div>
+    </div>`).join('');
+}
+buildSliders();
+
+async function callARIA(systemPrompt, userMessage, outputEl, thinkingEl, btnEl) {
+  thinkingEl.classList.add('visible');
+  outputEl.classList.remove('visible');
+  outputEl.innerHTML = '';
+  if (btnEl) btnEl.disabled = true;
+  try {
+    const res = await fetch('https://api.anthropic.com/v1/messages', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        model: 'claude-sonnet-4-6',
+        max_tokens: 1000,
+        system: systemPrompt,
+        messages: [{ role: 'user', content: userMessage }]
+      })
+    });
+    const data = await res.json();
+    const text = data.content?.map(b => b.text || '').join('') || 'Unable to generate response.';
+    thinkingEl.classList.remove('visible');
+    outputEl.innerHTML = formatResponse(text);
+    outputEl.classList.add('visible');
+  } catch(e) {
+    thinkingEl.classList.remove('visible');
+    outputEl.innerHTML = '<p style="color:var(--red)">Connection error. Please check your API connection.</p>';
+    outputEl.classList.add('visible');
+  }
+  if (btnEl) btnEl.disabled = false;
+}
+
+function formatResponse(text) {
+  return text
+    .replace(/^### (.+)$/gm, '<h3>$1</h3>')
+    .replace(/^## (.+)$/gm, '<h3>$1</h3>')
+    .replace(/^\*\*(.+)\*\*$/gm, '<h3>$1</h3>')
+    .replace(/\*\*(.+?)\*\*/g, '<strong>$1</strong>')
+    .replace(/^- (.+)$/gm, '<li>$1</li>')
+    .replace(/(<li>.*<\/li>)/gs, '<ul>$1</ul>')
+    .replace(/\n\n/g, '</p><p>')
+    .replace(/^(?!<[hul])/gm, '')
+    .replace(/\|(.+)\|/g, (m) => {
+      const cells = m.split('|').filter(c => c.trim());
+      return '<tr>' + cells.map(c => `<td>${c.trim()}</td>`).join('') + '</tr>';
+    })
+    .replace(/(<tr>.*<\/tr>)/s, '<table>$1</table>')
+    + '';
+}
+
+function runPlanner() {
+  const brief = document.getElementById('planner-input').value.trim();
+  if (!brief) { alert('Please describe your campaign first.'); return; }
+  const system = `You are ARIA, an elite AI CMO and advertising strategist with 20 years of experience managing $500M+ in ad spend. You give precise, data-informed, actionable campaign plans. Format your response with clear sections using ### headers. Be specific with numbers, timelines, and channel recommendations. Include: Campaign Strategy, Channel Plan with budget splits, Creative Brief, KPI Framework, and 30/60/90 day milestones.`;
+  callARIA(system, `Create a complete campaign plan for this brief:\n\n${brief}`,
+    document.getElementById('planner-output'),
+    document.getElementById('planner-thinking'),
+    document.getElementById('planner-btn'));
+}
+
+function runBudget() {
+  const amt = document.getElementById('budget-amount').value;
+  const ind = document.getElementById('budget-industry').value;
+  const goal = document.getElementById('budget-goal').value;
+  const roas = document.getElementById('budget-roas').value;
+  const system = `You are ARIA, an expert media buyer and budget allocation strategist. Provide a precise, data-driven budget allocation recommendation. Use ### headers for sections. Include specific percentage allocations, expected ROAS per channel, rationale, and a 3-month scaling roadmap.`;
+  const msg = `Optimise a ${amt}/month ad budget for a ${ind} company. Primary goal: ${goal}. Target ROAS: ${roas}. Provide the ideal channel allocation with reasoning, expected outcomes, and how to scale toward 10x ROAS.`;
+  callARIA(system, msg,
+    document.getElementById('budget-output'),
+    document.getElementById('budget-thinking'),
+    document.getElementById('budget-btn'));
+}
+
+function runCreative() {
+  const creative = document.getElementById('creative-input').value.trim();
+  if (!creative) { alert('Please describe your creative first.'); return; }
+  const system = `You are ARIA, a world-class direct response copywriter and creative strategist. Analyse ad creative with the precision of a conversion rate optimisation expert. Score it out of 100, identify the exact weaknesses, explain the psychology behind each issue, and provide a rewritten version that will outperform the original. Use ### headers. Be direct and specific.`;
+  callARIA(system, `Analyse and improve this ad creative:\n\n${creative}`,
+    document.getElementById('creative-output'),
+    document.getElementById('creative-thinking'),
+    document.getElementById('creative-btn'));
+}
+
+function runReport() {
+  const type = document.getElementById('report-type').value;
+  const period = document.getElementById('report-period').value;
+  const system = `You are ARIA, a senior marketing analyst writing a ${type}. Use the following performance data for ${period}: Total Spend $84,200 | Revenue $712,440 | ROAS 8.46x | Impressions 4.2M | CTR 2.01% | Conversions 934 | Top channel: Google Search at 11.2x ROAS | A/B test winner: "Get Results in 30 Days" headline at 14.7% CVR. Write a professional, insight-driven report with ### section headers. Include executive summary, performance highlights, what's working, what to fix, and next month's priorities.`;
+  callARIA(system, `Generate a complete ${type} for ${period}.`,
+    document.getElementById('report-output'),
+    document.getElementById('report-thinking'),
+    document.getElementById('report-btn'));
+}
+
+const chatHistory = [];
+async function sendChat() {
+  const input = document.getElementById('chat-input');
+  const msg = input.value.trim();
+  if (!msg) return;
+  input.value = '';
+  const messagesEl = document.getElementById('chat-messages');
+
+  messagesEl.innerHTML += `<div class="msg"><div class="msg-avatar user">👤</div><div class="msg-body"><div class="msg-name">You</div><div class="msg-text">${msg}</div></div></div>`;
+
+  const thinkEl = document.createElement('div');
+  thinkEl.className = 'msg';
+  thinkEl.innerHTML = `<div class="msg-avatar aria">A</div><div class="msg-body"><div class="msg-name">ARIA</div><div class="msg-text"><div class="think-dots"><span></span><span></span><span></span></div></div></div>`;
+  messagesEl.appendChild(thinkEl);
+  messagesEl.scrollTop = messagesEl.scrollHeight;
+
+  document.getElementById('chat-send-btn').disabled = true;
+  chatHistory.push({ role: 'user', content: msg });
+
+  try {
+    const res = await fetch('https://api.anthropic.com/v1/messages', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        model: 'claude-sonnet-4-6',
+        max_tokens: 1000,
+        system: `You are ARIA, an elite AI CMO and advertising intelligence agent. You have deep expertise in paid media, brand strategy, campaign planning, creative direction, analytics, and growth marketing. You give specific, actionable, data-informed advice. Be direct and confident. Format responses clearly with bullet points and bold key insights where helpful. You have access to this company's performance data: Monthly spend $84K, ROAS 8.46x, top channel Google Search at 11.2x, Meta at 8.4x.`,
+        messages: chatHistory
+      })
+    });
+    const data = await res.json();
+    const reply = data.content?.map(b => b.text || '').join('') || 'I encountered an error. Please try again.';
+    chatHistory.push({ role: 'assistant', content: reply });
+    thinkEl.querySelector('.msg-text').innerHTML = reply.replace(/\*\*(.+?)\*\*/g,'<strong>$1</strong>').replace(/^- (.+)$/gm,'<li>$1</li>').replace(/\n/g,'<br>');
+  } catch(e) {
+    thinkEl.querySelector('.msg-text').innerHTML = '<span style="color:var(--red)">Connection error. Please try again.</span>';
+  }
+  document.getElementById('chat-send-btn').disabled = false;
+  messagesEl.scrollTop = messagesEl.scrollHeight;
+}
+
+document.getElementById('chat-input').addEventListener('keydown', e => {
+  if (e.key === 'Enter' && !e.shiftKey) { e.preventDefault(); sendChat(); }
+});
+</script>
+</body>
+</html>

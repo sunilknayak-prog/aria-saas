@@ -1,0 +1,230 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>ARIA — Choose your plan</title>
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+<script src="https://js.stripe.com/v3/"></script>
+<style>
+@import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&family=JetBrains+Mono:wght@400;500&display=swap');
+:root{--bg:#07080f;--bg2:#0d0f1a;--surface:#111420;--border:#1e2340;--border2:#252a45;--accent:#4f6ef7;--accent2:#7c5ef4;--green:#10d9a0;--text:#e8eaf6;--text2:#8891b4;--text3:#454d6d;--sans:'Inter',sans-serif;--mono:'JetBrains Mono',monospace}
+*{box-sizing:border-box;margin:0;padding:0}
+body{background:var(--bg);color:var(--text);font-family:var(--sans);min-height:100vh;padding:40px 20px}
+nav{display:flex;align-items:center;max-width:1000px;margin:0 auto 48px;padding-bottom:20px;border-bottom:1px solid var(--border)}
+.logo{display:flex;align-items:center;gap:10px}
+.logo-icon{width:32px;height:32px;border-radius:8px;background:linear-gradient(135deg,var(--accent),var(--accent2));display:flex;align-items:center;justify-content:center;font-weight:700;font-size:14px;color:white}
+.logo-name{font-size:16px;font-weight:600}
+.nav-right{margin-left:auto;font-size:13px;color:var(--text3)}
+.nav-right a{color:var(--accent);text-decoration:none}
+.hero{text-align:center;margin-bottom:48px}
+.hero h1{font-size:36px;font-weight:700;margin-bottom:10px;letter-spacing:-.02em}
+.hero p{font-size:16px;color:var(--text2)}
+.trial-badge{display:inline-block;background:rgba(16,217,160,.1);border:1px solid rgba(16,217,160,.3);border-radius:20px;padding:6px 16px;font-size:13px;color:var(--green);font-weight:500;margin-bottom:16px}
+.plans{display:grid;grid-template-columns:1fr 1fr 1fr;gap:20px;max-width:1000px;margin:0 auto 40px}
+.plan{background:var(--bg2);border:1px solid var(--border);border-radius:16px;padding:32px;position:relative;transition:border-color .2s}
+.plan.featured{border-color:var(--accent)}
+.plan-badge{position:absolute;top:-13px;left:50%;transform:translateX(-50%);background:var(--accent);color:white;font-size:11px;font-weight:700;padding:4px 16px;border-radius:10px;white-space:nowrap;letter-spacing:.04em}
+.plan-name{font-size:12px;color:var(--text3);text-transform:uppercase;letter-spacing:.08em;font-weight:500;margin-bottom:10px}
+.plan-price{font-size:38px;font-weight:700;font-family:var(--mono);margin-bottom:4px}
+.plan-period{font-size:13px;color:var(--text3);margin-bottom:16px}
+.plan-desc{font-size:13px;color:var(--text2);margin-bottom:24px;line-height:1.5;min-height:44px}
+.plan-features{list-style:none;margin-bottom:28px}
+.plan-features li{font-size:13px;color:var(--text2);padding:7px 0;border-bottom:1px solid var(--border);display:flex;align-items:flex-start;gap:8px;line-height:1.4}
+.plan-features li:last-child{border-bottom:none}
+.plan-features li::before{content:'✓';color:var(--green);font-weight:700;flex-shrink:0;margin-top:1px}
+.btn{width:100%;padding:13px;border-radius:10px;font-size:14px;font-weight:600;border:none;cursor:pointer;font-family:var(--sans);transition:all .15s;text-align:center}
+.btn-primary{background:var(--accent);color:white}
+.btn-primary:hover{background:#3d5be5}
+.btn-primary:disabled{opacity:.5;cursor:not-allowed}
+.btn-ghost{background:transparent;color:var(--text);border:1px solid var(--border2)}
+.btn-ghost:hover{border-color:var(--text3)}
+.guarantee{text-align:center;max-width:520px;margin:0 auto;font-size:13px;color:var(--text3);line-height:1.7}
+.guarantee strong{color:var(--text2)}
+.faq{max-width:640px;margin:48px auto 0}
+.faq h2{font-size:20px;font-weight:600;margin-bottom:24px;text-align:center}
+.faq-item{border-bottom:1px solid var(--border);padding:16px 0}
+.faq-q{font-size:14px;font-weight:500;margin-bottom:6px}
+.faq-a{font-size:13px;color:var(--text2);line-height:1.6}
+.loading-overlay{position:fixed;inset:0;background:rgba(7,8,15,.9);display:none;align-items:center;justify-content:center;flex-direction:column;gap:14px;z-index:100}
+.loading-overlay.visible{display:flex}
+.spinner{width:36px;height:36px;border:3px solid var(--border);border-top-color:var(--accent);border-radius:50%;animation:spin .8s linear infinite}
+@keyframes spin{to{transform:rotate(360deg)}}
+.loading-text{font-size:14px;color:var(--text2)}
+</style>
+</head>
+<body>
+
+<div class="loading-overlay" id="loading">
+  <div class="spinner"></div>
+  <div class="loading-text" id="loading-text">Redirecting to secure checkout...</div>
+</div>
+
+<nav>
+  <div class="logo">
+    <div class="logo-icon">A</div>
+    <div class="logo-name">ARIA</div>
+  </div>
+  <div class="nav-right">Already have a plan? <a href="app.html">Go to dashboard →</a></div>
+</nav>
+
+<div class="hero">
+  <div class="trial-badge">14-day free trial on all plans</div>
+  <h1>Choose your plan</h1>
+  <p>Start free. Cancel anytime. No setup fees.</p>
+</div>
+
+<div class="plans">
+
+  <div class="plan">
+    <div class="plan-name">Starter</div>
+    <div class="plan-price">$2,000</div>
+    <div class="plan-period">per month · billed monthly</div>
+    <div class="plan-desc">For boutique agencies managing up to $500K/month in ad spend.</div>
+    <ul class="plan-features">
+      <li>Campaign Planner (10 campaigns/mo)</li>
+      <li>Budget Optimizer</li>
+      <li>Creative Analyzer (20 creatives/mo)</li>
+      <li>Performance Dashboard</li>
+      <li>Weekly report generation</li>
+      <li>Ask ARIA (200 queries/mo)</li>
+      <li>Email support</li>
+    </ul>
+    <button class="btn btn-ghost" onclick="checkout('starter')" id="btn-starter">Start free trial</button>
+  </div>
+
+  <div class="plan featured">
+    <div class="plan-badge">MOST POPULAR</div>
+    <div class="plan-name">Agency</div>
+    <div class="plan-price">$3,500</div>
+    <div class="plan-period">per month · billed monthly</div>
+    <div class="plan-desc">For agencies managing $500K–$5M/month across multiple clients.</div>
+    <ul class="plan-features">
+      <li>Unlimited campaign planning</li>
+      <li>Real-time budget reallocation</li>
+      <li>Unlimited creative analysis</li>
+      <li>Multi-client dashboard</li>
+      <li>White-label client reports</li>
+      <li>Ask ARIA (unlimited)</li>
+      <li>A/B test monitoring</li>
+      <li>Dedicated onboarding call</li>
+      <li>Slack support</li>
+    </ul>
+    <button class="btn btn-primary" onclick="checkout('agency')" id="btn-agency">Start free trial</button>
+  </div>
+
+  <div class="plan">
+    <div class="plan-name">Enterprise</div>
+    <div class="plan-price" style="font-size:28px;padding-top:6px">Custom</div>
+    <div class="plan-period">contact us for pricing</div>
+    <div class="plan-desc">For large agencies and in-house teams with custom integration needs.</div>
+    <ul class="plan-features">
+      <li>Everything in Agency</li>
+      <li>Custom API integrations</li>
+      <li>SSO and team permissions</li>
+      <li>Dedicated success manager</li>
+      <li>Custom model fine-tuning</li>
+      <li>SLA guarantees</li>
+      <li>Quarterly strategy reviews</li>
+    </ul>
+    <button class="btn btn-ghost" onclick="window.location.href='mailto:hello@aria.ai?subject=Enterprise enquiry'">Talk to us</button>
+  </div>
+
+</div>
+
+<div class="guarantee">
+  <strong>14-day free trial, no credit card required.</strong> After your trial, you'll be charged the plan price monthly. Cancel any time from your dashboard — no questions asked, no cancellation fees.
+</div>
+
+<div class="faq">
+  <h2>Common questions</h2>
+  <div class="faq-item">
+    <div class="faq-q">Do I need a credit card to start the trial?</div>
+    <div class="faq-a">No. You get 14 days of full access with no card required. You'll only be asked for payment details at the end of your trial if you choose to continue.</div>
+  </div>
+  <div class="faq-item">
+    <div class="faq-q">Can I switch plans?</div>
+    <div class="faq-a">Yes — upgrade or downgrade any time from your account settings. Changes take effect immediately and are prorated to the day.</div>
+  </div>
+  <div class="faq-item">
+    <div class="faq-q">What happens if I cancel?</div>
+    <div class="faq-a">You keep access until the end of your billing period. After that, your account is paused — your data is kept for 90 days so you can reactivate any time.</div>
+  </div>
+  <div class="faq-item">
+    <div class="faq-q">Is there an annual discount?</div>
+    <div class="faq-a">Yes — pay annually and get 2 months free (effectively a 17% discount). Email us after signing up and we'll switch you to annual billing.</div>
+  </div>
+</div>
+
+<script>
+// ─── CONFIG — replace with your values ────────────────────────────────────
+const SUPABASE_URL = 'YOUR_SUPABASE_URL'
+const SUPABASE_ANON_KEY = 'YOUR_SUPABASE_ANON_KEY'
+const STRIPE_PUBLISHABLE_KEY = 'YOUR_STRIPE_PUBLISHABLE_KEY'
+
+// Create these products in your Stripe dashboard and paste the Price IDs here
+const STRIPE_PRICES = {
+  starter: 'price_YOUR_STARTER_PRICE_ID',
+  agency:  'price_YOUR_AGENCY_PRICE_ID'
+}
+// ──────────────────────────────────────────────────────────────────────────
+
+const { createClient } = supabase
+const sb = createClient(SUPABASE_URL, SUPABASE_ANON_KEY)
+const stripe = Stripe(STRIPE_PUBLISHABLE_KEY)
+
+function showLoading(text) {
+  document.getElementById('loading-text').textContent = text
+  document.getElementById('loading').classList.add('visible')
+}
+
+async function checkout(plan) {
+  showLoading('Setting up your trial...')
+
+  // Get current user
+  const { data: { session } } = await sb.auth.getSession()
+  if (!session) {
+    window.location.href = 'auth.html'
+    return
+  }
+
+  try {
+    // Call your Supabase Edge Function to create a Stripe Checkout session
+    const { data, error } = await sb.functions.invoke('create-checkout-session', {
+      body: {
+        price_id: STRIPE_PRICES[plan],
+        user_id: session.user.id,
+        user_email: session.user.email,
+        success_url: window.location.origin + '/app.html?welcome=true',
+        cancel_url: window.location.origin + '/checkout.html'
+      }
+    })
+
+    if (error) throw error
+
+    // Redirect to Stripe Checkout
+    const result = await stripe.redirectToCheckout({ sessionId: data.session_id })
+    if (result.error) throw result.error
+
+  } catch (err) {
+    document.getElementById('loading').classList.remove('visible')
+    alert('Something went wrong. Please try again or contact support.')
+    console.error(err)
+  }
+}
+
+// Check if user is already subscribed
+async function init() {
+  const { data: { session } } = await sb.auth.getSession()
+  if (!session) return
+
+  const { data } = await sb.from('subscriptions').select('status').eq('user_id', session.user.id).single()
+  if (data?.status === 'active') {
+    window.location.href = 'app.html'
+  }
+}
+
+init()
+</script>
+</body>
+</html>
