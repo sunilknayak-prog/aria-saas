@@ -1,3 +1,4 @@
+
 <!DOCTYPE html>
 <html lang="en">
 <head>
@@ -5,7 +6,6 @@
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>ARIA — Choose your plan</title>
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
-<script src="https://js.stripe.com/v3/"></script>
 <style>
 @import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&family=JetBrains+Mono:wght@400;500&display=swap');
 :root{--bg:#07080f;--bg2:#0d0f1a;--surface:#111420;--border:#1e2340;--border2:#252a45;--accent:#4f6ef7;--accent2:#7c5ef4;--green:#10d9a0;--text:#e8eaf6;--text2:#8891b4;--text3:#454d6d;--sans:'Inter',sans-serif;--mono:'JetBrains Mono',monospace}
@@ -36,7 +36,6 @@ nav{display:flex;align-items:center;max-width:1000px;margin:0 auto 48px;padding-
 .btn{width:100%;padding:13px;border-radius:10px;font-size:14px;font-weight:600;border:none;cursor:pointer;font-family:var(--sans);transition:all .15s;text-align:center}
 .btn-primary{background:var(--accent);color:white}
 .btn-primary:hover{background:#3d5be5}
-.btn-primary:disabled{opacity:.5;cursor:not-allowed}
 .btn-ghost{background:transparent;color:var(--text);border:1px solid var(--border2)}
 .btn-ghost:hover{border-color:var(--text3)}
 .guarantee{text-align:center;max-width:520px;margin:0 auto;font-size:13px;color:var(--text3);line-height:1.7}
@@ -57,7 +56,7 @@ nav{display:flex;align-items:center;max-width:1000px;margin:0 auto 48px;padding-
 
 <div class="loading-overlay" id="loading">
   <div class="spinner"></div>
-  <div class="loading-text" id="loading-text">Redirecting to secure checkout...</div>
+  <div class="loading-text">Redirecting to secure checkout...</div>
 </div>
 
 <nav>
@@ -65,7 +64,7 @@ nav{display:flex;align-items:center;max-width:1000px;margin:0 auto 48px;padding-
     <div class="logo-icon">A</div>
     <div class="logo-name">ARIA</div>
   </div>
-  <div class="nav-right">Already have a plan? <a href="app.html">Go to dashboard →</a></div>
+  <div class="nav-right">Already have a plan? <a href="ARIA_CMO_Agent.html">Go to dashboard →</a></div>
 </nav>
 
 <div class="hero">
@@ -90,7 +89,7 @@ nav{display:flex;align-items:center;max-width:1000px;margin:0 auto 48px;padding-
       <li>Ask ARIA (200 queries/mo)</li>
       <li>Email support</li>
     </ul>
-    <button class="btn btn-ghost" onclick="checkout('starter')" id="btn-starter">Start free trial</button>
+    <button class="btn btn-ghost" onclick="checkout('starter')">Start free trial</button>
   </div>
 
   <div class="plan featured">
@@ -110,7 +109,7 @@ nav{display:flex;align-items:center;max-width:1000px;margin:0 auto 48px;padding-
       <li>Dedicated onboarding call</li>
       <li>Slack support</li>
     </ul>
-    <button class="btn btn-primary" onclick="checkout('agency')" id="btn-agency">Start free trial</button>
+    <button class="btn btn-primary" onclick="checkout('agency')">Start free trial</button>
   </div>
 
   <div class="plan">
@@ -157,72 +156,38 @@ nav{display:flex;align-items:center;max-width:1000px;margin:0 auto 48px;padding-
 </div>
 
 <script>
-// ─── CONFIG — replace with your values ────────────────────────────────────
 const SUPABASE_URL = 'https://tyzhmczoehvbefzzlkpw.supabase.co'
 const SUPABASE_ANON_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InR5emhtY3pvZWh2YmVmenpsa3B3Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODE4NjQzMDYsImV4cCI6MjA5NzQ0MDMwNn0.0aC6rLeO_i5png6WiH7CL5dcxceUxi6dXG_RUJPLZMo'
-const STRIPE_PUBLISHABLE_KEY = 'pk_test_51PsirBSGhH9LI4T1D2uqPIczXylOJvJiYnwFbdajsvpwDEoKShTYkF9wtUmFPbfVbYE0h4zaG72WsaBMUm4vnXzZ00PNwlI7Oc'
 
-// Create these products in your Stripe dashboard and paste the Price IDs here
-const STRIPE_PRICES = {
-  starter: 'price_1Tk0v8SGhH9LI4T1sEMndTMy',
-  agency:  'price_1Tk0vvSGhH9LI4T13P9QQ3Nf'
+const STRIPE_LINKS = {
+  starter: 'https://buy.stripe.com/test_cNi8wR5f41dVeoG0Uu1gs00',
+  agency:  'https://buy.stripe.com/test_dRmdRb8rg7Cj6WefPo1gs01'
 }
-// ──────────────────────────────────────────────────────────────────────────
 
 const { createClient } = supabase
 const sb = createClient(SUPABASE_URL, SUPABASE_ANON_KEY)
-const stripe = Stripe(STRIPE_PUBLISHABLE_KEY)
 
-function showLoading(text) {
-  document.getElementById('loading-text').textContent = text
+function showLoading() {
   document.getElementById('loading').classList.add('visible')
 }
 
 async function checkout(plan) {
-  showLoading('Setting up your trial...')
-
-  // Get current user
+  showLoading()
   const { data: { session } } = await sb.auth.getSession()
-  if (!session) {
-    window.location.href = 'auth.html'
-    return
+  let url = STRIPE_LINKS[plan]
+  if (session?.user?.email) {
+    url += '?prefilled_email=' + encodeURIComponent(session.user.email)
   }
-
-  try {
-    // Call your Supabase Edge Function to create a Stripe Checkout session
-    const { data, error } = await sb.functions.invoke('create-checkout-session', {
-      body: {
-        price_id: STRIPE_PRICES[plan],
-        user_id: session.user.id,
-        user_email: session.user.email,
-        success_url: window.location.origin + '/app.html?welcome=true',
-        cancel_url: window.location.origin + '/checkout.html'
-      }
-    })
-
-    if (error) throw error
-
-    // Redirect to Stripe Checkout
-    const result = await stripe.redirectToCheckout({ sessionId: data.session_id })
-    if (result.error) throw result.error
-
-  } catch (err) {
-    document.getElementById('loading').classList.remove('visible')
-    alert('Something went wrong. Please try again or contact support.')
-    console.error(err)
-  }
+  window.location.href = url
 }
 
-// Check if user is already subscribed
 async function init() {
   const { data: { session } } = await sb.auth.getSession()
   if (!session) return
-
-  const { data, error } = await sb.from('subscriptions')
+  const { data } = await sb.from('subscriptions')
     .select('status')
     .eq('user_id', session.user.id)
     .maybeSingle()
-
   if (data?.status === 'active' || data?.status === 'trialing') {
     window.location.href = 'ARIA_CMO_Agent.html'
   }
